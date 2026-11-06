@@ -1,0 +1,39 @@
+name: Runzivo runner sizes
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/runzivo-sizes.yml
+
+jobs:
+  size:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.label }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        label:
+          - rzv-ubuntu-24.04-x64-2vcpu-8gb
+          - rzv-ubuntu-24.04-x64-4vcpu-16gb
+          - rzv-ubuntu-24.04-x64-6vcpu-24gb
+    steps:
+      - name: Show the machine
+        run: |
+          echo "Label: ${{ matrix.label }}"
+          echo "vCPUs: $(nproc)"
+          free -h
+          df -h /
+          uname -a
+      - name: Check vCPU count matches the label
+        run: |
+          want=$(echo "${{ matrix.label }}" | sed -E 's/.*-([0-9]+)vcpu-.*/\1/')
+          got=$(nproc)
+          echo "want=$want got=$got"
+          test "$got" -eq "$want"
+      - name: Short CPU load on all cores
+        run: |
+          for i in $(seq "$(nproc)"); do (timeout 20 sh -c 'while :; do :; done' &) ; done
+          sleep 22
+          echo done
